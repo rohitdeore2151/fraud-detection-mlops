@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Data
+data/raw/
+data/processed/
+
+# Local MLflow and generated artifacts
+mlruns/
+mlflow.db
+artifacts/
+models/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Logs and editor files
+*.log
+.vscode/
+.DS_Store
+frontend-temp/
