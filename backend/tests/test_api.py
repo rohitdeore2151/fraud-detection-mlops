@@ -24,7 +24,7 @@ def test_valid_transaction_prediction():
     result = response.json()
     assert 0.0 <= result["fraud_probability"] <= 1.0
     assert result["is_fraud"] in (0, 1)
-    assert result["threshold"] == 0.5
+    assert result["threshold"] == 0.95
 
 
 def test_negative_amount_is_rejected():
