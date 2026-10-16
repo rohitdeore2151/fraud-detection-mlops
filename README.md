@@ -4,7 +4,7 @@ An end-to-end machine learning project for detecting fraudulent financial transa
 
 ## Project Overview
 
-Fraudulent transactions are rare, making fraud detection an imbalanced classification problem. This project trains an XGBoost model to estimate fraud probability and classifies transactions using a configurable decision threshold.
+Fraudulent transactions are rare, making fraud detection an imbalanced classification problem. This project trains an XGBoost model to estimate fraud probability and currently classifies transactions using a provisional decision threshold.
 
 ## Tech Stack
 
@@ -30,7 +30,7 @@ The raw dataset is not included in this repository by default. Follow the datase
 
 ## Model Evaluation
 
-The decision threshold was selected using validation data, then evaluated on the held-out test set.
+The API currently uses **0.95 as a provisional threshold**. In the available full-validation sweep, 0.95 had the highest F1 among the tested thresholds from 0.90 to 0.99. A separate 100,000-row validation comparison records 0.50 as a baseline and explicitly says not to finalize a production threshold until alert-volume limits and the costs of missed fraud and false alerts are defined. Those operational criteria are not available, so 0.95 is not a finalized production threshold. The held-out test metrics below are a recorded evaluation only; the test set was not used to choose the threshold.
 
 | Metric | Test result |
 |---|---:|
@@ -43,7 +43,7 @@ The decision threshold was selected using validation data, then evaluated on the
 | False negatives | 375 |
 | True negatives | 952,968 |
 
-The selected threshold is **0.95**. On the test set, the model detected 857 of 1,232 fraudulent transactions. These results reflect the current candidate model and evaluation setup, not a guarantee of real-world fraud detection performance.
+At the reported 0.95 threshold, the test evaluation detected 857 of 1,232 fraudulent transactions. This is a historical evaluation, not evidence that 0.95 is operationally optimal. These results reflect the current candidate model and evaluation setup, not a guarantee of real-world fraud detection performance.
 
 ## API
 
@@ -63,7 +63,17 @@ Example request:
 }
 ```
 
-The API returns a fraud probability, classification, and decision threshold. The request values are illustrative.
+The response contains `fraud_probability`, `is_fraud`, and `threshold`. For example:
+
+```json
+{
+  "fraud_probability": 0.12,
+  "is_fraud": 0,
+  "threshold": 0.95
+}
+```
+
+The example response values are illustrative, not model results. The threshold is provisional. If the candidate model or preprocessor files are missing, the endpoint returns HTTP 503 with `{"detail":"Model artifacts are unavailable."}`.
 
 ## Run Locally
 
@@ -96,26 +106,26 @@ Open a second terminal:
 
 ```cmd
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
 Open the local URL printed by Vite, typically http://localhost:5173/.
 
-Ensure the trained model and preprocessing artifacts are present before starting the backend.
+The raw dataset and model artifacts are not committed. The backend can start without model artifacts, but `POST /predict` returns HTTP 503 until both `models/candidates/xgboost_decision_time.json` and `models/candidates/decision_time_preprocessor.joblib` are present locally.
 
 ## Tests
 
 From the project root, with the virtual environment activated:
 
 ```cmd
-python -m pytest backend/tests -v
+python -m pytest backend/tests tests/unit -v
 ```
 
 ## Limitations
 
 - The model was trained on a subset of the available training and validation data.
-- Fraud probabilities and the selected threshold depend on the current training setup.
+- Fraud probabilities and the provisional threshold depend on the current training setup; production use requires agreed alert-volume and error-cost criteria.
 - False negatives remain: some fraudulent transactions are not detected.
 - This is a portfolio project and is not validated for production financial decisions.
 
@@ -123,8 +133,8 @@ python -m pytest backend/tests -v
 
 - Automate data and model pipelines.
 - Add data and model drift monitoring.
-- Add CI checks and reproducible training.
-- Improve threshold selection using business costs.
+- Expand CI coverage and improve training reproducibility.
+- Finalize threshold selection using agreed business costs and alert-volume limits.
 - Add model versioning and deployment monitoring.
 
 ## Disclaimer
