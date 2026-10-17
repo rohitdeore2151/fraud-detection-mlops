@@ -75,6 +75,16 @@ The response contains `fraud_probability`, `is_fraud`, and `threshold`. For exam
 
 The example response values are illustrative, not model results. The threshold is provisional. If the candidate model or preprocessor files are missing, the endpoint returns HTTP 503 with `{"detail":"Model artifacts are unavailable."}`.
 
+The portfolio dashboard also uses these read-only endpoints:
+
+- `GET /health` — API process health.
+- `GET /history` — locally persisted prediction records with search, fraud-status filtering, timestamp sorting, and pagination.
+- `GET /model/status` — model/preprocessor file availability and implemented capability status; this does not load the model.
+- `GET /model/performance` — checked-in held-out test metrics and validation-only threshold comparisons.
+- `POST /predict/batch` — CSV data upload for server-side validation and batch scoring.
+
+Batch CSV files must include `step`, `type`, `amount`, `oldbalanceOrg`, and `oldbalanceDest`. The API reports invalid rows and scores valid rows using the same lazy-loaded model and preprocessor as single predictions. Uploads are limited to 5 MB and 10,000 data rows. It does not load the large PaySim dataset into the browser.
+
 ## Run Locally
 
 ### 1. Create and activate a virtual environment
@@ -111,6 +121,14 @@ npm run dev
 ```
 
 Open the local URL printed by Vite, typically http://localhost:5173/.
+
+The frontend API URL defaults to `http://127.0.0.1:8000`. To use another backend URL, copy `frontend\.env.example` to `frontend\.env`, change `VITE_API_BASE_URL`, and restart Vite. Configure backend CORS origins with `BACKEND_CORS_ORIGINS` (comma-separated); `.env.example` shows the default local origins. For example, in PowerShell set `$env:BACKEND_CORS_ORIGINS` before starting Uvicorn, or pass an environment file with `--env-file .env`.
+
+The dashboard and model performance views are sourced from `models\evaluation\final_test_metrics.json` and `models\evaluation\validation_thresholds.json`. Test results are reported separately from threshold selection, which uses validation data only. The 0.95 threshold remains provisional.
+
+Batch scoring is implemented for uploaded CSVs. Each successful single or batch prediction is persisted to a local SQLite database at `backend\data\transaction_history.sqlite3`. The database and schema are created automatically on the first successful prediction, survive backend restarts, and are excluded from Git because they contain local prediction history. `GET /history` provides read-only search, fraud-status filtering, timestamp sorting, and pagination. Only successful predictions are recorded; invalid batch rows and failed predictions are not.
+
+Continuous traffic metrics, drift monitoring, automated retraining, model version/training metadata, and production deployment are not implemented; the monitoring page reports those limitations explicitly.
 
 The raw dataset and model artifacts are not committed. The backend can start without model artifacts, but `POST /predict` returns HTTP 503 until both `models/candidates/xgboost_decision_time.json` and `models/candidates/decision_time_preprocessor.joblib` are present locally.
 

@@ -23,6 +23,7 @@ mlruns/
 mlflow.db
 artifacts/
 models/
+backend/data/transaction_history.sqlite3
 
 # Frontend
 frontend/node_modules/
